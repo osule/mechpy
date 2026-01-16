@@ -1,0 +1,15 @@
+[package]
+name = "mechpy"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "mechpy"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.22", features = ["extension-module"] }
+arrow = "53.0"
+arrow-array = "53.0"
+arrow-schema = "53.0"
+pyo3-arrow = "0.5"

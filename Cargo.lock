@@ -625,7 +625,6 @@ version = "0.1.0"
 dependencies = [
  "arrow",
  "arrow-array",
- "arrow-cast",
  "arrow-schema",
  "pyo3",
  "pyo3-arrow",

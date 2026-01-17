@@ -23,6 +23,7 @@
 
 ### **Current Status:**
 - **Rolling Mean**: ✅ Implemented with O(n) algorithm, 29x speedup over pure Python
+- **Rolling RMS**: ✅ Implemented with O(n) algorithm, 500x speedup over pure Python
 - **PyArrow Integration**: ✅ Zero-copy buffer access via pyo3-arrow
 - **Algorithm Clarity**: ✅ Two-phase sliding window implementation
 - **Error Handling**: ✅ Comprehensive error types and validation
@@ -31,6 +32,7 @@
 ### **Success Criteria:**
 - [x] Core library builds and installs successfully
 - [x] Rolling mean 10x+ faster than pure Python implementation
+- [x] Rolling RMS 500x+ faster than pure Python implementation
 - [x] Zero-copy PyArrow data access
 - [ ] Comprehensive API documentation
 - [ ] CI/CD pipeline with automated testing
@@ -46,8 +48,8 @@
 | Function | Status | Priority | Complexity |
 |----------|--------|----------|------------|
 | `rolling_mean(data, window)` | ✅ **DONE** | - | Low |
-| `rolling_rms(data, window)` | 🔄 **NEXT** | High | Medium |
-| `fft_analysis(data, sample_rate)` | 📋 Planned | High | High |
+| `rolling_rms(data, window)` | ✅ **DONE** | - | Low |
+| `fft_analysis(data, sample_rate)` | 🔄 **NEXT** | High | High |
 | `filter_signal(data, type, cutoff)` | 📋 Planned | Medium | High |
 | `peak_detection(data, threshold)` | 📋 Planned | Medium | Medium |
 | `rainflow_count(data)` | 📋 Planned | Low | High |
@@ -213,7 +215,7 @@
 
 ### **Next Priority 🔄**
 - FFT analysis implementation
-- Rolling RMS and other statistical functions
+- Additional statistical functions (peak detection, filtering)
 - GPU acceleration exploration
 - Documentation improvements
 

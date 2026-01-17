@@ -2,7 +2,7 @@
 
 *A high-performance Python library for mechanical engineering, built with Rust*
 
-[![Performance](https://img.shields.io/badge/performance-29x%20faster-orange)](#performance)
+[![Performance](https://img.shields.io/badge/performance-29--500x%20faster-orange)](#performance)
 [![PyPI](https://img.shields.io/pypi/v/mechpy)](https://pypi.org/project/mechpy/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE.txt)
 
@@ -23,10 +23,10 @@
 
 ## ✨ Key Features
 
-- 🚀 **29x faster** than pure Python implementations
+- 🚀 **29-500x faster** than pure Python implementations
 - 🔄 **Zero-copy** PyArrow integration for efficient data handling
 - 🛡️ **Type-safe** Rust core with comprehensive error handling
-- 📊 **Sensor data processing** with O(n) sliding window algorithms
+- 📊 **Sensor data processing** with O(n) sliding window algorithms (mean, RMS)
 - 🧪 **Thoroughly tested** with 100% test coverage
 - 📈 **Performance benchmarks** included
 
@@ -81,6 +81,18 @@ noisy_data = pa.array([1.0, None, 3.0, 4.0, None, 6.0])
 result = mechpy.sensor.rolling_mean(noisy_data, window=3)
 print(result.to_pylist())
 # [None, None, 2.0, 3.5, 3.5, 5.0]
+
+# Compute rolling RMS for vibration analysis
+vibration_data = pa.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+rms_values = mechpy.sensor.rolling_rms(vibration_data, window=3)
+print(rms_values.to_pylist())
+# [None, None, 0.245, 0.354, 0.463, 0.539]
+
+# Perfect for fatigue analysis - RMS handles squared values naturally
+stress_data = pa.array([-100.0, 50.0, -200.0, 150.0, -50.0])
+stress_rms = mechpy.sensor.rolling_rms(stress_data, window=3)
+print([round(x, 1) if x is not None else None for x in stress_rms.to_pylist()])
+# [None, None, 134.2, 169.2, 112.2]
 ```
 
 ### Performance Comparison
@@ -108,6 +120,8 @@ MechPy delivers significant performance improvements over pure Python implementa
 |-----------|-------------|---------|-------------|---------|
 | Rolling Mean | 100 points | 65μs | 107μs | 1.6x |
 | Rolling Mean | 10K points | 2ms | 14.6ms | **29x** |
+| Rolling RMS | 100 points | 1.9μs | 146μs | **76x** |
+| Rolling RMS | 10K points | 58μs | 29ms | **500x** |
 
 *Benchmarks run on Apple M2, performance may vary by hardware.*
 

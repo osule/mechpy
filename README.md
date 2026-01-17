@@ -99,7 +99,7 @@ import math
 # Create vibration signal with 50 Hz component
 vibration_signal = pa.array([math.sin(2 * math.pi * 50 * t / 1000) for t in range(256)])
 spectrum = mechpy.sensor.fft_analysis(vibration_signal, sample_rate=1000)
-print(f"Peak frequency: {spectrum['frequencies'][spectrum['magnitude'].index(max(spectrum['magnitude']))]:.1f} Hz")
+print(f"Peak frequency: {spectrum.column('frequencies')[spectrum.column('magnitude').index(max(spectrum.column('magnitude')))]:.1f} Hz")
 # Peak frequency: 50.0 Hz
 ```
 

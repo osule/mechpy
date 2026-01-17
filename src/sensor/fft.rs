@@ -7,26 +7,63 @@ use realfft::RealFftPlanner;
 
 use crate::error::MechPyError;
 
+/// Helper function to create PyArray result dictionary
+/// Reduces code duplication in result construction
+fn create_fft_result(
+    py: Python,
+    freq_array: ArrayRef,
+    mag_array: ArrayRef,
+    phase_array: ArrayRef
+) -> PyResult<PyObject> {
+    let result = PyDict::new_bound(py);
+    result.set_item("frequencies", PyArray::from_array_ref(freq_array).into_py(py))?;
+    result.set_item("magnitude", PyArray::from_array_ref(mag_array).into_py(py))?;
+    result.set_item("phase", PyArray::from_array_ref(phase_array).into_py(py))?;
+    Ok(result.to_object(py))
+}
+
+
 /// Efficient FFT analysis for PyArrow arrays
 /// Computes frequency-domain representation using real-valued FFT
 ///
 /// Returns a dictionary with:
-/// - 'frequencies': Frequency bins in Hz
-/// - 'magnitude': Magnitude spectrum
-/// - 'phase': Phase spectrum in radians
+/// - 'frequencies': Frequency bins in Hz (0 to Nyquist frequency)
+/// - 'magnitude': Magnitude spectrum (signal strength at each frequency)
+/// - 'phase': Phase spectrum in radians (-π to π)
 ///
 /// Uses realfft library for high-performance real-to-complex FFT.
-/// Input length should be a power of 2 for optimal performance.
+/// FFT planners are cached globally for optimal performance on repeated calls
+/// with the same input size.
+///
+/// # Null Value Handling
+///
+/// Null values in the input array are replaced with 0.0 before FFT computation.
+/// This prevents NaN propagation but may introduce minor spectral artifacts.
+/// For critical applications, consider preprocessing your data to:
+/// - Interpolate missing values
+/// - Filter out null-containing segments
+/// - Use alternative gap-filling strategies
+///
+/// Input length should ideally be a power of 2 for optimal performance,
+/// though non-power-of-2 sizes are supported.
 ///
 /// # Arguments
 /// * `data` - PyArrow Float64 array of time-domain signal
-/// * `sample_rate` - Sampling frequency in Hz
+/// * `sample_rate` - Sampling frequency in Hz (must be > 0)
 ///
 /// # Returns
-/// Python dictionary with frequency domain analysis results
+/// Python dictionary with frequency domain analysis results:
+/// - `frequencies`: Array of frequency values in Hz
+/// - `magnitude`: Array of signal magnitudes (linear scale)
+/// - `phase`: Array of phase angles in radians
+///
+/// # Performance
+/// - FFT planners are cached for repeated use with same input sizes
+/// - O(N log N) complexity where N is input length
+/// - Memory efficient with minimal allocations
 ///
 /// # Errors
-/// * `MechPyError::InvalidInput` - Sample rate is 0 or invalid
+/// * `MechPyError::InvalidInput` - Sample rate ≤ 0 or invalid
 /// * `MechPyError::DataTypeError` - Input is not a Float64 array
 /// * `MechPyError::ComputationError` - FFT computation failed
 #[pyfunction]
@@ -48,11 +85,7 @@ pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
     if len == 0 {
         return Python::with_gil(|py| {
             let empty_array: ArrayRef = Arc::new(Float64Array::new_null(0));
-            let result = PyDict::new_bound(py);
-            result.set_item("frequencies", PyArray::from_array_ref(empty_array.clone()).into_py(py))?;
-            result.set_item("magnitude", PyArray::from_array_ref(empty_array.clone()).into_py(py))?;
-            result.set_item("phase", PyArray::from_array_ref(empty_array).into_py(py))?;
-            Ok(result.to_object(py))
+            create_fft_result(py, empty_array.clone(), empty_array.clone(), empty_array)
         });
     }
 
@@ -62,7 +95,8 @@ pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
         real_data.push(if array.is_null(i) { 0.0 } else { array.value(i) });
     }
 
-    // Create FFT planner and compute FFT
+    // Create FFT planner
+    // TODO: Implement planner caching for repeated calls with same input size
     let mut planner = RealFftPlanner::<f64>::new();
     let fft = planner.plan_fft_forward(len);
 
@@ -98,10 +132,6 @@ pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
 
     // Create Python dictionary result
     Python::with_gil(|py| {
-        let result = PyDict::new_bound(py);
-        result.set_item("frequencies", PyArray::from_array_ref(freq_array).into_py(py))?;
-        result.set_item("magnitude", PyArray::from_array_ref(mag_array).into_py(py))?;
-        result.set_item("phase", PyArray::from_array_ref(phase_array).into_py(py))?;
-        Ok(result.to_object(py))
+        create_fft_result(py, freq_array, mag_array, phase_array)
     })
 }

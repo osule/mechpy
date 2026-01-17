@@ -221,6 +221,13 @@
 - GPU acceleration exploration
 - Documentation improvements
 
+### **Future Enhancements 🔮**
+#### **Advanced FFT Features**
+- [ ] **Windowing Functions**: Hann, Hamming, Blackman, Kaiser windows for spectral analysis
+- [ ] **Normalization Options**: Length normalization, physical units, dB scaling
+- [ ] **FFT Optimization**: SIMD acceleration, planner caching for real-time applications
+- [ ] **Advanced Spectral Analysis**: Power spectral density, spectrograms, filter banks
+
 ---
 
 *This roadmap is a living document - priorities and timelines will be adjusted based on user feedback, technical discoveries, and market conditions.*

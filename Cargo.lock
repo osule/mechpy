@@ -626,6 +626,7 @@ dependencies = [
  "arrow",
  "arrow-array",
  "arrow-schema",
+ "once_cell",
  "pyo3",
  "pyo3-arrow",
  "realfft",

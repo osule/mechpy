@@ -1,4 +1,4 @@
-"""Benchmark tests comparing Rust vs Python implementations"""
+"""Benchmark tests for rolling window functions (rolling_mean, rolling_rms)"""
 
 import pyarrow as pa
 import pytest
@@ -41,8 +41,6 @@ def rolling_rms_python(data, window):
     return pa.array(result)
 
 
-
-
 @pytest.fixture
 def small_data():
     return pa.array([float(i) for i in range(100)])
@@ -53,60 +51,43 @@ def large_data():
     return pa.array([float(i) for i in range(10000)])
 
 
-def test_bench_rust_small(benchmark, small_data):
-    """Benchmark Rust implementation with small dataset"""
+# Rolling Mean Benchmarks
+def test_bench_rolling_mean_rust_small(benchmark, small_data):
+    """Benchmark Rust rolling_mean with small dataset"""
     benchmark(sensor.rolling_mean, small_data, 10)
 
 
-def test_bench_python_small(benchmark, small_data):
-    """Benchmark Python implementation with small dataset"""
+def test_bench_rolling_mean_python_small(benchmark, small_data):
+    """Benchmark Python rolling_mean with small dataset"""
     benchmark(rolling_mean_python, small_data, 10)
 
 
-def test_bench_rust_large(benchmark, large_data):
-    """Benchmark Rust implementation with large dataset"""
+def test_bench_rolling_mean_rust_large(benchmark, large_data):
+    """Benchmark Rust rolling_mean with large dataset"""
     benchmark(sensor.rolling_mean, large_data, 50)
 
 
-def test_bench_python_large(benchmark, large_data):
-    """Benchmark Python implementation with large dataset"""
+def test_bench_rolling_mean_python_large(benchmark, large_data):
+    """Benchmark Python rolling_mean with large dataset"""
     benchmark(rolling_mean_python, large_data, 50)
 
 
 # Rolling RMS Benchmarks
-
-def test_bench_rms_rust_small(benchmark, small_data):
-    """Benchmark Rust RMS implementation with small dataset"""
+def test_bench_rolling_rms_rust_small(benchmark, small_data):
+    """Benchmark Rust rolling_rms with small dataset"""
     benchmark(sensor.rolling_rms, small_data, 10)
 
 
-def test_bench_rms_python_small(benchmark, small_data):
-    """Benchmark Python RMS implementation with small dataset"""
+def test_bench_rolling_rms_python_small(benchmark, small_data):
+    """Benchmark Python rolling_rms with small dataset"""
     benchmark(rolling_rms_python, small_data, 10)
 
 
-def test_bench_rms_rust_large(benchmark, large_data):
-    """Benchmark Rust RMS implementation with large dataset"""
+def test_bench_rolling_rms_rust_large(benchmark, large_data):
+    """Benchmark Rust rolling_rms with large dataset"""
     benchmark(sensor.rolling_rms, large_data, 50)
 
 
-def test_bench_rms_python_large(benchmark, large_data):
-    """Benchmark Python RMS implementation with large dataset"""
+def test_bench_rolling_rms_python_large(benchmark, large_data):
+    """Benchmark Python rolling_rms with large dataset"""
     benchmark(rolling_rms_python, large_data, 50)
-
-
-# FFT Analysis Benchmarks
-
-def test_bench_fft_rust_small(benchmark, small_data):
-    """Benchmark Rust FFT implementation with small dataset"""
-    benchmark(sensor.fft_analysis, small_data, 1000.0)
-
-
-def test_bench_fft_rust_large(benchmark, large_data):
-    """Benchmark Rust FFT implementation with large dataset"""
-    benchmark(sensor.fft_analysis, large_data, 1000.0)
-
-# Note: Python FFT benchmarks omitted as they require numpy/scipy
-# Rust implementation shows excellent performance:
-# - Small (100 pts): ~3.7μs
-# - Large (10K pts): ~160μs

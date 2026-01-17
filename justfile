@@ -16,7 +16,7 @@ test:
 
 # Run benchmarks
 bench:
-    uv run pytest tests/bench_sensor.py --benchmark-only
+    uv run pytest tests/bench/ --benchmark-only
 
 # Clean build artifacts
 clean:

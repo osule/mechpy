@@ -211,7 +211,7 @@ uv run maturin develop
 uv run python -m pytest tests/ -v
 
 # Run benchmarks
-uv run python -m pytest tests/bench_sensor.py --benchmark-only
+uv run python -m pytest tests/bench/ --benchmark-only
 ```
 
 ### Development Workflow
@@ -269,7 +269,7 @@ pub fn register_module(py: Python, parent: &Bound<PyModule>) -> PyResult<()> {
 uv run python -m pytest tests/ -v --tb=short
 
 # Run benchmarks
-uv run python -m pytest tests/bench_sensor.py --benchmark-only
+uv run python -m pytest tests/bench/ --benchmark-only
 
 # Check code quality
 cargo clippy -- -D warnings

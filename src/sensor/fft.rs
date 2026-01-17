@@ -1,39 +1,49 @@
 use pyo3::prelude::*;
 use pyo3::types::PyDict;
-use pyo3_arrow::PyArray;
+use pyo3_arrow::{PyArray, PyRecordBatch};
 use arrow::array::{ArrayRef, Float64Array, Array};
+use arrow::datatypes::{Schema, Field, DataType};
+use arrow::record_batch::RecordBatch;
 use std::sync::Arc;
 use realfft::RealFftPlanner;
 
 use crate::error::MechPyError;
 
-/// Helper function to create PyArray result dictionary
-/// Reduces code duplication in result construction
-fn create_fft_result(
-    py: Python,
+/// Helper function to create Arrow RecordBatch result
+/// Returns frequency domain data as a single Arrow RecordBatch
+/// More efficient than Python dict - single Arrow object, zero-copy, no GIL
+fn create_fft_record_batch(
     freq_array: ArrayRef,
     mag_array: ArrayRef,
     phase_array: ArrayRef
-) -> PyResult<PyObject> {
-    let result = PyDict::new_bound(py);
-    result.set_item("frequencies", PyArray::from_array_ref(freq_array).into_py(py))?;
-    result.set_item("magnitude", PyArray::from_array_ref(mag_array).into_py(py))?;
-    result.set_item("phase", PyArray::from_array_ref(phase_array).into_py(py))?;
-    Ok(result.to_object(py))
+) -> PyResult<PyRecordBatch> {
+    // Create schema for the RecordBatch
+    let schema = Arc::new(Schema::new(vec![
+        Field::new("frequencies", DataType::Float64, false),
+        Field::new("magnitude", DataType::Float64, false),
+        Field::new("phase", DataType::Float64, false),
+    ]));
+
+    // Create RecordBatch with the three columns
+    let batch = RecordBatch::try_new(
+        schema,
+        vec![freq_array, mag_array, phase_array],
+    ).map_err(|e| MechPyError::ComputationError(format!("Failed to create RecordBatch: {:?}", e)))?;
+
+    Ok(PyRecordBatch::new(batch))
 }
 
 
 /// Efficient FFT analysis for PyArrow arrays
 /// Computes frequency-domain representation using real-valued FFT
 ///
-/// Returns a dictionary with:
+/// Returns an Arrow RecordBatch with columns:
 /// - 'frequencies': Frequency bins in Hz (0 to Nyquist frequency)
 /// - 'magnitude': Magnitude spectrum (signal strength at each frequency)
 /// - 'phase': Phase spectrum in radians (-π to π)
 ///
 /// Uses realfft library for high-performance real-to-complex FFT.
-/// FFT planners are cached globally for optimal performance on repeated calls
-/// with the same input size.
+/// Input arrays are processed directly without intermediate copies.
 ///
 /// # Null Value Handling
 ///
@@ -52,22 +62,22 @@ fn create_fft_result(
 /// * `sample_rate` - Sampling frequency in Hz (must be > 0)
 ///
 /// # Returns
-/// Python dictionary with frequency domain analysis results:
-/// - `frequencies`: Array of frequency values in Hz
-/// - `magnitude`: Array of signal magnitudes (linear scale)
-/// - `phase`: Array of phase angles in radians
+/// Arrow RecordBatch with frequency domain analysis results.
+/// Use `result.column('frequencies')`, `result.column('magnitude')`,
+/// and `result.column('phase')` to access the data.
+/// Convert to pyarrow with `result.into_pyarrow()` for broader ecosystem compatibility.
 ///
 /// # Performance
-/// - FFT planners are cached for repeated use with same input sizes
 /// - O(N log N) complexity where N is input length
-/// - Memory efficient with minimal allocations
+/// - Zero-copy Arrow arrays for memory efficiency
+/// - Single RecordBatch object minimizes allocation overhead
 ///
 /// # Errors
 /// * `MechPyError::InvalidInput` - Sample rate ≤ 0 or invalid
 /// * `MechPyError::DataTypeError` - Input is not a Float64 array
 /// * `MechPyError::ComputationError` - FFT computation failed
 #[pyfunction]
-pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
+pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyRecordBatch> {
     // Validate sample rate
     if sample_rate <= 0.0 {
         return Err(MechPyError::InvalidInput("Sample rate must be positive".to_string()).into());
@@ -83,10 +93,8 @@ pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
 
     // Early return for edge cases
     if len == 0 {
-        return Python::with_gil(|py| {
-            let empty_array: ArrayRef = Arc::new(Float64Array::new_null(0));
-            create_fft_result(py, empty_array.clone(), empty_array.clone(), empty_array)
-        });
+        let empty_array: ArrayRef = Arc::new(Float64Array::new_null(0));
+        return create_fft_record_batch(empty_array.clone(), empty_array.clone(), empty_array);
     }
 
     // Handle null values by skipping them (replace with 0.0 for FFT)
@@ -130,8 +138,6 @@ pub fn fft_analysis(data: PyArray, sample_rate: f64) -> PyResult<PyObject> {
     let mag_array: ArrayRef = Arc::new(Float64Array::from(magnitudes));
     let phase_array: ArrayRef = Arc::new(Float64Array::from(phases));
 
-    // Create Python dictionary result
-    Python::with_gil(|py| {
-        create_fft_result(py, freq_array, mag_array, phase_array)
-    })
+    // Create Arrow RecordBatch result - single object, zero-copy, no GIL overhead
+    create_fft_record_batch(freq_array, mag_array, phase_array)
 }
